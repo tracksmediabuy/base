@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Diagnostic – Face Yoga</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #fbf6f2;
+    --card: #ffffff;
+    --ink: #2b2220;
+    --muted: #8a7a74;
+    --accent: #c9826b;
+    --accent-ink: #ffffff;
+    --soft: #f3e6df;
+    --line: #eadbd3;
+    --radius: 18px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: Inter, system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  /* --- Sélecteur de variantes (outil de maquette, pas dans l'app) --- */
+  .switcher {
+    display: flex; gap: 6px; padding: 14px 16px 0;
+    flex-wrap: wrap; justify-content: center;
+  }
+  .switcher button {
+    border: 1px solid var(--line); background: transparent; color: var(--muted);
+    font: 500 13px Inter, sans-serif; padding: 7px 12px; border-radius: 999px; cursor: pointer;
+  }
+  .switcher button[aria-pressed="true"] { background: var(--ink); color: #fff; border-color: var(--ink); }
+
+  /* --- Slide --- */
+  .slide {
+    width: 100%; max-width: 420px; flex: 1;
+    display: flex; flex-direction: column; justify-content: center;
+    padding: 32px 20px 40px; gap: 28px;
+  }
+  .progress { height: 4px; background: var(--soft); border-radius: 4px; overflow: hidden; }
+  .progress span { display: block; height: 100%; width: 100%; background: var(--accent); }
+
+  h1 {
+    font-family: Fraunces, Georgia, serif; font-weight: 500;
+    font-size: 27px; line-height: 1.25; text-align: center; letter-spacing: -0.01em;
+  }
+
+  .actions { display: flex; flex-direction: column; gap: 12px; }
+
+  .btn {
+    width: 100%; border: 0; cursor: pointer; border-radius: var(--radius);
+    font: 600 16px/1.3 Inter, sans-serif; padding: 18px 20px; text-align: center;
+    transition: transform .12s ease, opacity .2s ease, background .2s ease;
+  }
+  .btn:active { transform: scale(.98); }
+  .btn-primary { background: var(--accent); color: var(--accent-ink); box-shadow: 0 8px 20px -10px rgba(201,130,107,.8); }
+  .btn-secondary { background: transparent; color: var(--muted); border: 1.5px solid var(--line); font-weight: 500; }
+  .btn[disabled] { opacity: .4; cursor: not-allowed; box-shadow: none; }
+  .btn small { display: block; font-weight: 400; font-size: 12.5px; opacity: .9; margin-top: 4px; }
+
+  .note { font-size: 12.5px; line-height: 1.5; color: var(--muted); text-align: center; padding: 0 6px; }
+
+  /* Révélation inline (variante 2) */
+  .reveal {
+    background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 20px; display: none; flex-direction: column; gap: 14px;
+    animation: rise .28s ease both;
+  }
+  .reveal.open { display: flex; }
+  .reveal p { font-size: 15px; line-height: 1.5; text-align: center; }
+
+  /* Case à cocher (variante 4) */
+  .check {
+    display: flex; gap: 12px; align-items: flex-start; cursor: pointer;
+    background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px;
+    font-size: 14px; line-height: 1.45;
+  }
+  .check input { appearance: none; flex: none; width: 22px; height: 22px; margin-top: 1px;
+    border: 1.5px solid var(--line); border-radius: 7px; background: #fff; display: grid; place-items: center; cursor: pointer; }
+  .check input:checked { background: var(--accent); border-color: var(--accent); }
+  .check input:checked::after { content: ""; width: 6px; height: 11px; border: solid #fff; border-width: 0 2px 2px 0; transform: rotate(45deg) translate(-1px,-1px); }
+  .check input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* Bottom sheet (variante 3) */
+  .backdrop { position: fixed; inset: 0; background: rgba(43,34,32,.35); display: none; align-items: flex-end; justify-content: center; z-index: 10; }
+  .backdrop.open { display: flex; animation: fade .2s ease both; }
+  .sheet {
+    width: 100%; max-width: 420px; background: var(--card);
+    border-radius: 26px 26px 0 0; padding: 12px 20px calc(28px + env(safe-area-inset-bottom));
+    display: flex; flex-direction: column; gap: 16px; animation: up .3s cubic-bezier(.2,.8,.2,1) both;
+  }
+  .sheet .grip { width: 40px; height: 4px; border-radius: 4px; background: var(--line); align-self: center; }
+  .sheet h2 { font-family: Fraunces, Georgia, serif; font-weight: 500; font-size: 21px; text-align: center; margin-top: 6px; }
+  .sheet p { font-size: 15px; line-height: 1.5; text-align: center; color: var(--muted); }
+
+  /* Écran de fin */
+  .done { display: none; text-align: center; flex-direction: column; gap: 14px; align-items: center; animation: rise .3s ease both; }
+  .done.show { display: flex; }
+  .done .tick { width: 64px; height: 64px; border-radius: 50%; background: var(--soft); display: grid; place-items: center; font-size: 28px; color: var(--accent); }
+  .done button { background: none; border: 0; color: var(--muted); font: 500 13px Inter, sans-serif; text-decoration: underline; cursor: pointer; margin-top: 8px; }
+
+  @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  @keyframes up { from { transform: translateY(100%); } to { transform: none; } }
+  @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+
+<nav class="switcher" aria-label="Variantes">
+  <button data-v="1" aria-pressed="true">1 · Astérisque</button>
+  <button data-v="2">2 · Après clic</button>
+  <button data-v="3">3 · Fenêtre</button>
+  <button data-v="4">4 · Case à cocher</button>
+  <button data-v="5">5 · Dans le bouton</button>
+</nav>
+
+<main class="slide">
+  <div class="progress"><span></span></div>
+  <div id="stage"></div>
+</main>
+
+<div class="backdrop" id="backdrop">
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title">
+    <div class="grip"></div>
+    <h2 id="sheet-title">Laury s’occupe de toi dès aujourd’hui 💛</h2>
+    <p>Ton programme est créé rien que pour toi&nbsp;: en le lançant maintenant, tu renonces au délai de rétractation de 14&nbsp;jours.</p>
+    <button class="btn btn-primary" data-final="now">Je confirme</button>
+    <button class="btn btn-secondary" data-final="wait">Je préfère attendre 14 jours</button>
+  </div>
+</div>
+
+<script>
+  const QUESTION = 'Souhaites-tu que Laury traite ton diagnostic au plus vite&nbsp;?';
+  const YES = 'Oui, je veux recevoir mon programme le plus tôt possible';
+  const WAIT = 'Attendre 14 jours';
+
+  const variants = {
+    // 1 — Astérisque : mention discrète sous les boutons
+    1: `
+      <div style="display:flex;flex-direction:column;gap:28px">
+        <h1>${QUESTION}</h1>
+        <div class="actions">
+          <button class="btn btn-primary" data-final="now">${YES}*</button>
+          <button class="btn btn-secondary" data-final="wait">${WAIT}</button>
+        </div>
+        <p class="note">*Pour que Laury puisse commencer ton diagnostic tout de suite, tu renonces au délai de rétractation de 14&nbsp;jours.</p>
+      </div>`,
+
+    // 2 — Après clic : la mention apparaît en douceur, puis on confirme
+    2: `
+      <div style="display:flex;flex-direction:column;gap:28px">
+        <h1>${QUESTION}</h1>
+        <div class="actions" id="v2-actions">
+          <button class="btn btn-primary" data-reveal>${YES}</button>
+          <button class="btn btn-secondary" data-final="wait">${WAIT}</button>
+        </div>
+        <div class="reveal" id="v2-reveal">
+          <p>Avec plaisir&nbsp;! Laury se met au travail dès maintenant pour préparer ton programme. Tu acceptes ainsi de renoncer au délai de rétractation de 14&nbsp;jours.</p>
+          <button class="btn btn-primary" data-final="now">C’est parti ✨</button>
+          <button class="btn btn-secondary" data-final="wait">Finalement, j’attends 14 jours</button>
+        </div>
+      </div>`,
+
+    // 3 — Fenêtre (bottom sheet) au clic
+    3: `
+      <div style="display:flex;flex-direction:column;gap:28px">
+        <h1>${QUESTION}</h1>
+        <div class="actions">
+          <button class="btn btn-primary" data-sheet>${YES}</button>
+          <button class="btn btn-secondary" data-final="wait">${WAIT}</button>
+        </div>
+      </div>`,
+
+    // 4 — Case à cocher : accord explicite avant de valider
+    4: `
+      <div style="display:flex;flex-direction:column;gap:28px">
+        <h1>${QUESTION}</h1>
+        <div class="actions">
+          <label class="check">
+            <input type="checkbox" id="v4-check">
+            <span>J’accepte que Laury commence mon programme dès maintenant et je renonce à mon délai de rétractation de 14&nbsp;jours.</span>
+          </label>
+          <button class="btn btn-primary" id="v4-yes" data-final="now" disabled>${YES}</button>
+          <button class="btn btn-secondary" data-final="wait">${WAIT}</button>
+        </div>
+      </div>`,
+
+    // 5 — Dans le bouton : la mention fait partie du choix
+    5: `
+      <div style="display:flex;flex-direction:column;gap:28px">
+        <h1>${QUESTION}</h1>
+        <div class="actions">
+          <button class="btn btn-primary" data-final="now">
+            ${YES}
+            <small>Laury démarre aujourd’hui · je renonce aux 14 jours de rétractation</small>
+          </button>
+          <button class="btn btn-secondary" data-final="wait">
+            ${WAIT}
+            <small>Laury commencera à l’issue du délai de rétractation</small>
+          </button>
+        </div>
+      </div>`
+  };
+
+  const done = {
+    now:  { icon: '✓', title: 'C’est noté&nbsp;!', text: 'Laury s’occupe de ton diagnostic.' },
+    wait: { icon: '🌿', title: 'C’est noté&nbsp;!', text: 'Laury démarrera ton programme dans 14&nbsp;jours.' }
+  };
+
+  const stage = document.getElementById('stage');
+  const backdrop = document.getElementById('backdrop');
+  let current = 1;
+
+  function render(v) {
+    current = v;
+    stage.innerHTML = variants[v];
+    document.querySelectorAll('.switcher button').forEach(b =>
+      b.setAttribute('aria-pressed', String(b.dataset.v == v)));
+    const check = document.getElementById('v4-check');
+    if (check) check.addEventListener('change', () => {
+      document.getElementById('v4-yes').disabled = !check.checked;
+    });
+  }
+
+  function finish(choice) {
+    backdrop.classList.remove('open');
+    const d = done[choice];
+    stage.innerHTML = `
+      <div class="done show">
+        <div class="tick">${d.icon}</div>
+        <h1>${d.title}</h1>
+        <p class="note" style="font-size:15px">${d.text}</p>
+        <button data-restart>Revoir la variante</button>
+      </div>`;
+    // ➜ Ici : enregistrer le choix + l'horodatage côté serveur (preuve du consentement).
+  }
+
+  document.addEventListener('click', e => {
+    const t = e.target.closest('button');
+    if (!t) { if (e.target === backdrop) backdrop.classList.remove('open'); return; }
+    if (t.dataset.v) return render(Number(t.dataset.v));
+    if (t.hasAttribute('data-restart')) return render(current);
+    if (t.hasAttribute('data-reveal')) {
+      document.getElementById('v2-actions').style.display = 'none';
+      document.getElementById('v2-reveal').classList.add('open');
+      return;
+    }
+    if (t.hasAttribute('data-sheet')) return backdrop.classList.add('open');
+    if (t.dataset.final && !t.disabled) return finish(t.dataset.final);
+  });
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') backdrop.classList.remove('open');
+  });
+
+  render(1);
+</script>
+</body>
+</html>
